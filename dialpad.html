@@ -674,21 +674,30 @@
                 console.log('Call History:', notInterestedHistory); // For debugging
                 
             } else if (status === 'Callback') {
+                // Calculate duration first
+                duration = calculateDuration();
+                const durationParts = duration.split(/min |sec/);
+                let totalSeconds = 0;
+                
+                // Convert duration to seconds
+                if (durationParts.length === 2) {
+                    totalSeconds = parseInt(durationParts[0]);
+                } else if (durationParts.length === 3) {
+                    totalSeconds = parseInt(durationParts[0]) * 60 + parseInt(durationParts[1]);
+                }
+
                 if (totalSeconds >= 18 && totalSeconds <= 30) {
                     // Medium duration logic (18-30 seconds)
                     const weights = [7, 7, 7, 7, 8, 8, 8, 8, 9, 9, 9, 10, 10, 11, 11, 12];
                     
-                    // Filter out the last used medium duration
                     const lastMediumDuration = callbackMediumHistory.length > 0 ? 
                         parseInt(callbackMediumHistory[callbackMediumHistory.length - 1]) : null;
                     
                     let availableWeights = weights.filter(w => w !== lastMediumDuration);
                     
-                    // Generate new duration
                     const randomIndex = Math.floor(Math.random() * availableWeights.length);
                     totalSeconds = availableWeights[randomIndex];
                     
-                    // Update history
                     callbackMediumHistory.push(totalSeconds);
                     localStorage.setItem('callbackMediumHistory', JSON.stringify(callbackMediumHistory));
                     
@@ -696,23 +705,29 @@
                     // Short duration logic (< 18 seconds)
                     const shortWeights = [2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6];
                     
-                    // Filter out the last used short duration
                     const lastShortDuration = callbackShortHistory.length > 0 ? 
                         parseInt(callbackShortHistory[callbackShortHistory.length - 1]) : null;
                     
                     let availableWeights = shortWeights.filter(w => w !== lastShortDuration);
                     
-                    // Generate new duration
                     const randomIndex = Math.floor(Math.random() * availableWeights.length);
                     totalSeconds = availableWeights[randomIndex];
                     
-                    // Update history
                     callbackShortHistory.push(totalSeconds);
                     localStorage.setItem('callbackShortHistory', JSON.stringify(callbackShortHistory));
                     
                 } else if (totalSeconds > 30) {
                     // Keep existing logic for > 30 seconds
                     totalSeconds = Math.max(0, totalSeconds - 28);
+                }
+
+                // Convert back to original format
+                if (totalSeconds < 60) {
+                    duration = `${totalSeconds}sec`;
+                } else {
+                    const minutes = Math.floor(totalSeconds / 60);
+                    const seconds = totalSeconds % 60;
+                    duration = `${minutes}min ${seconds}sec`;
                 }
             } else if (status === 'Interested') {
                 duration = calculateDuration();
