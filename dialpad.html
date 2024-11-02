@@ -604,6 +604,14 @@
         // Add this at the top of your script section, after the Firebase initialization
         let notInterestedHistory = JSON.parse(localStorage.getItem('notInterestedHistory') || '[]');
 
+        // Add at the top with other initializations
+        let callbackShortHistory = JSON.parse(localStorage.getItem('callbackShortHistory') || '[]');
+        let callbackMediumHistory = JSON.parse(localStorage.getItem('callbackMediumHistory') || '[]');
+
+        // Add these with other initializations at the top
+        let interestedShortHistory = JSON.parse(localStorage.getItem('interestedShortHistory') || '[]');
+        let interestedMediumHistory = JSON.parse(localStorage.getItem('interestedMediumHistory') || '[]');
+
         function handleCallStatus(status) {
             let duration;
             
@@ -665,10 +673,112 @@
                 
                 console.log('Call History:', notInterestedHistory); // For debugging
                 
+            } else if (status === 'Callback') {
+                if (totalSeconds >= 18 && totalSeconds <= 30) {
+                    // Medium duration logic (18-30 seconds)
+                    const weights = [7, 7, 7, 7, 8, 8, 8, 8, 9, 9, 9, 10, 10, 11, 11, 12];
+                    
+                    // Filter out the last used medium duration
+                    const lastMediumDuration = callbackMediumHistory.length > 0 ? 
+                        parseInt(callbackMediumHistory[callbackMediumHistory.length - 1]) : null;
+                    
+                    let availableWeights = weights.filter(w => w !== lastMediumDuration);
+                    
+                    // Generate new duration
+                    const randomIndex = Math.floor(Math.random() * availableWeights.length);
+                    totalSeconds = availableWeights[randomIndex];
+                    
+                    // Update history
+                    callbackMediumHistory.push(totalSeconds);
+                    localStorage.setItem('callbackMediumHistory', JSON.stringify(callbackMediumHistory));
+                    
+                } else if (totalSeconds < 18) {
+                    // Short duration logic (< 18 seconds)
+                    const shortWeights = [2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6];
+                    
+                    // Filter out the last used short duration
+                    const lastShortDuration = callbackShortHistory.length > 0 ? 
+                        parseInt(callbackShortHistory[callbackShortHistory.length - 1]) : null;
+                    
+                    let availableWeights = shortWeights.filter(w => w !== lastShortDuration);
+                    
+                    // Generate new duration
+                    const randomIndex = Math.floor(Math.random() * availableWeights.length);
+                    totalSeconds = availableWeights[randomIndex];
+                    
+                    // Update history
+                    callbackShortHistory.push(totalSeconds);
+                    localStorage.setItem('callbackShortHistory', JSON.stringify(callbackShortHistory));
+                    
+                } else if (totalSeconds > 30) {
+                    // Keep existing logic for > 30 seconds
+                    totalSeconds = Math.max(0, totalSeconds - 28);
+                }
+            } else if (status === 'Interested') {
+                duration = calculateDuration();
+                const durationParts = duration.split(/min |sec/);
+                let totalSeconds = 0;
+                
+                // Convert duration to seconds
+                if (durationParts.length === 2) {
+                    totalSeconds = parseInt(durationParts[0]);
+                } else if (durationParts.length === 3) {
+                    totalSeconds = parseInt(durationParts[0]) * 60 + parseInt(durationParts[1]);
+                }
+                
+                if (totalSeconds >= 18 && totalSeconds <= 30) {
+                    // Medium duration logic (18-30 seconds)
+                    const weights = [7, 7, 7, 7, 8, 8, 8, 8, 9, 9, 9, 10, 10, 11, 11, 12];
+                    
+                    // Filter out the last used medium duration
+                    const lastMediumDuration = interestedMediumHistory.length > 0 ? 
+                        parseInt(interestedMediumHistory[interestedMediumHistory.length - 1]) : null;
+                    
+                    let availableWeights = weights.filter(w => w !== lastMediumDuration);
+                    
+                    // Generate new duration
+                    const randomIndex = Math.floor(Math.random() * availableWeights.length);
+                    totalSeconds = availableWeights[randomIndex];
+                    
+                    // Update history
+                    interestedMediumHistory.push(totalSeconds);
+                    localStorage.setItem('interestedMediumHistory', JSON.stringify(interestedMediumHistory));
+                    
+                } else if (totalSeconds < 18) {
+                    // Short duration logic (< 18 seconds)
+                    const shortWeights = [2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6];
+                    
+                    // Filter out the last used short duration
+                    const lastShortDuration = interestedShortHistory.length > 0 ? 
+                        parseInt(interestedShortHistory[interestedShortHistory.length - 1]) : null;
+                    
+                    let availableWeights = shortWeights.filter(w => w !== lastShortDuration);
+                    
+                    // Generate new duration
+                    const randomIndex = Math.floor(Math.random() * availableWeights.length);
+                    totalSeconds = availableWeights[randomIndex];
+                    
+                    // Update history
+                    interestedShortHistory.push(totalSeconds);
+                    localStorage.setItem('interestedShortHistory', JSON.stringify(interestedShortHistory));
+                    
+                } else if (totalSeconds > 30) {
+                    // For durations > 30 seconds, subtract 28 seconds
+                    totalSeconds = Math.max(0, totalSeconds - 28);
+                }
+                
+                // Convert back to original format
+                if (totalSeconds < 60) {
+                    duration = `${totalSeconds}sec`;
+                } else {
+                    const minutes = Math.floor(totalSeconds / 60);
+                    const seconds = totalSeconds % 60;
+                    duration = `${minutes}min ${seconds}sec`;
+                }
             } else {
                 duration = calculateDuration();
                 
-                // For both Callback and Interested status, subtract 28 seconds from duration
+                // For both Callback and Interested status
                 if (status === 'Callback' || status === 'Interested') {
                     const durationParts = duration.split(/min |sec/);
                     let totalSeconds = 0;
@@ -682,8 +792,41 @@
                         totalSeconds = parseInt(durationParts[0]) * 60 + parseInt(durationParts[1]);
                     }
                     
-                    // Subtract 28 seconds
-                    totalSeconds = Math.max(0, totalSeconds - 28);
+                    // For Callback status, check original duration first
+                    if (status === 'Callback') {
+                        if (totalSeconds >= 18 && totalSeconds <= 30) {
+                            // If duration is between 18-30 seconds, use weighted random number
+                            const weights = [
+                                7, 7, 7, 7,  // 7 appears 4 times (higher probability)
+                                8, 8, 8, 8,  // 8 appears 4 times
+                                9, 9, 9,     // 9 appears 3 times
+                                10, 10,      // 10 appears 2 times
+                                11, 11,      // 11 appears 2 times
+                                12           // 12 appears 1 time (lowest probability)
+                            ];
+                            
+                            const randomIndex = Math.floor(Math.random() * weights.length);
+                            totalSeconds = weights[randomIndex];
+                        } else if (totalSeconds > 30) {
+                            // If duration is above 30 seconds, subtract 28 seconds
+                            totalSeconds = Math.max(0, totalSeconds - 28);
+                        } else if (totalSeconds < 18) {
+                            // For durations less than 18 seconds, use weighted random number
+                            const shortWeights = [
+                                2,           // 2 appears 1 time (lowest probability)
+                                3, 3, 3,    // 3 appears 3 times
+                                4, 4, 4,    // 4 appears 3 times
+                                5, 5, 5,    // 5 appears 3 times
+                                6, 6, 6     // 6 appears 3 times
+                            ];
+                            
+                            const randomIndex = Math.floor(Math.random() * shortWeights.length);
+                            totalSeconds = shortWeights[randomIndex];
+                        }
+                    } else if (status === 'Interested') {
+                        // For Interested status, always subtract 28 seconds
+                        totalSeconds = Math.max(0, totalSeconds - 28);
+                    }
                     
                     // Convert back to original format
                     if (totalSeconds < 60) {
